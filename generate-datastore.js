@@ -1,8 +1,9 @@
+const sqlite3 = require('sqlite3');
 const fs = require('fs');
-const fsPromises = require('fs/promises');
 
-const BASE_DIR = __dirname;
-const DATASTORE_DIR = `${BASE_DIR}/datastore`;
+if (fs.existsSync('city-populations.db')) {
+  throw new Error('The database file already exists.');
+}
 
 // This function is copied from one of the answers at
 // https://stackoverflow.com/questions/8493195/how-can-i-parse-a-csv-string-with-javascript-which-contains-comma-in-data
@@ -23,38 +24,22 @@ const csvToArray = (text) => {
 };
 
 const raw = fs.readFileSync('city-populations.csv');
-const groupedByState = csvToArray(raw.toString())
+const records = csvToArray(raw.toString())
   // just skip over some of the malformed data (not sure if it's intended to be like that or not).
   // also this would be a terrible practice in production.
-  .filter(([ city, state, population ]) => {
-    // There is at least one entry that contains a forward slash.
-    // This will be problematic since I'm envisioning the datastore being structured
-    // as one file per city.
-    // Also deal with backslash in case of windows environment.
-    return city && !city.match(/\\|\//) && state && population != undefined;
-  })
-  // prep for case-insensitive
-  .map(([ city, state, ...rest ]) => [ city.toLowerCase(), state.toLowerCase(), ...rest ])
-  // group by state
-  .reduce((acc, [ city, state, population ]) => {
-    const entry = [ city, population ];
+  // see notes.txt for notes about malformed data in the csv.
+  .filter(([ city, state, population ]) => city && state && !Number.isNaN(+population)) // attempt to convert population to a number
+  // prep for case-insensitive and db insertion
+  .map(([ city, state, ...rest ]) => [ city.toLowerCase().replace('\'', '\'\''), state.toLowerCase(), ...rest ]);
 
-    if (!acc[state]) acc[state] = [ entry ];
-    else acc[state].push(entry);
+const db = new sqlite3.Database('city-populations.db');
+const insertionValuesString = records.reduce((acc, [ city, state, population ]) => {
+  const recordString = `('${city}', '${state}', ${population})`;
+  if (!acc) return recordString;
+  else return `${acc}, ${recordString}`;
+}, '');
 
-    return acc;
-  }, {});
-
-// generate datastore
-fs.mkdirSync(DATASTORE_DIR);
-(async () => {
-  await Promise.all(
-    Object
-      .entries(groupedByState)
-      .map(async ([ state, entries ]) => {
-        const stateDir = `${DATASTORE_DIR}/${state}`; 
-        await fsPromises.mkdir(stateDir);
-        return Promise.all(entries.map(([ city, population ]) => fsPromises.writeFile(`${stateDir}/${city}`, population)));
-      })
-  );
-})();
+db.serialize(() => {
+  db.run(`CREATE TABLE city_populations (city TEXT NOT NULL, state TEXT NOT NULL, population INTEGER NOT NULL);`);
+  db.run(`INSERT INTO city_populations (city,state,population) VALUES ${insertionValuesString};`);
+});

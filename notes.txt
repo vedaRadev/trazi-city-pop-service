@@ -1,3 +1,6 @@
+NOTES ABOUT THE CSV FILE
+
 At line 29089 in the CSV there is a record missing a city field.
 At line 2449 in the CSV there is a city that contains a comma (value in double quotes).
 At line 24704 there is a city name which contains a forward slash.
+At line 3864 there is a city whose population is a character, not an integer.
