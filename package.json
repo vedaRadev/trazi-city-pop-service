@@ -4,9 +4,9 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "postinstall": "node generate-datastore.js",
+    "postinstall": "node generate-database.js",
     "clean": "shx rm city-populations.db && shx rm -rf node_modules",
-    "regenerate-database": "shx rm city-populations.db && node generate-datastore.js",
+    "regenerate-database": "shx rm city-populations.db && node generate-database.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
