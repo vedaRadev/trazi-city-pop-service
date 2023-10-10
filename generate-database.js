@@ -40,7 +40,13 @@ const insertionValuesString = records.reduce((acc, [ city, state, population ]) 
 }, '');
 
 db.serialize(() => {
-  db.run(`CREATE TABLE city_populations (city TEXT NOT NULL, state TEXT NOT NULL, population INTEGER NOT NULL);`);
+  db.run(`
+    CREATE TABLE city_populations (
+      city TEXT NOT NULL,
+      state TEXT NOT NULL,
+      population INTEGER NOT NULL,
+      PRIMARY KEY (state, city)
+    );`);
   db.run(`INSERT INTO city_populations (city,state,population) VALUES ${insertionValuesString};`);
 });
 
