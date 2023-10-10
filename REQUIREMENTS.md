@@ -25,7 +25,7 @@ You will be writing a node.js service that allows you to get a city's population
     * 201 status if the data was created instead of updated.
 
 ## The Data
-The data can be found (here)[https://github.com/Trazi-Ventures/sample-data-intervie/blob/main/city_populations.csv].
+The data can be found [here](https://github.com/Trazi-Ventures/sample-data-intervie/blob/main/city_populations.csv).
 You are allowed to change the data's format, schema, and how it's stored.
 The only rule is that the data returns back with the expected population that's in the file above.
 For example, for `GET http://127.0.0.1:5555/api/population/state/Alabama/city/Marion` the population of 3178 should be returned.
