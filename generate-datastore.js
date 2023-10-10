@@ -22,7 +22,7 @@ const csvToArray = (text) => {
     return ret;
 };
 
-const raw = fs.readFileSync('city_populations.csv');
+const raw = fs.readFileSync('city-populations.csv');
 const groupedByState = csvToArray(raw.toString())
   // just skip over some of the malformed data (not sure if it's intended to be like that or not).
   // also this would be a terrible practice in production.
