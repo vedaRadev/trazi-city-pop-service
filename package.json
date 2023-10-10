@@ -5,6 +5,8 @@
   "main": "server.js",
   "scripts": {
     "postinstall": "node generate-datastore.js",
+    "clean": "shx rm -rf datastore && shx rm -rf node_modules",
+    "regenerate-datastore": "shx rm -rf datastore && node generate-datastore.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
@@ -12,6 +14,7 @@
   "author": "Ryan Armstrong",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "shx": "^0.3.4"
   }
 }
