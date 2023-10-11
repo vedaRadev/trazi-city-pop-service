@@ -76,6 +76,11 @@ server.put(
   express.text(),
   toLowerCaseParams('state', 'city'),
   (req, res) => {
+    if (req.get('Content-Type').toLowerCase() !== 'text/plain') {
+      res.status(400).send('Only text/plain Content-Type body is allowed');
+      return;
+    }
+
     const { params: { state, city }, body: population } = req;
 
     // I wanted to use a sqlite upsert statement here but there was no good way of determining if
@@ -88,7 +93,7 @@ server.put(
       (err, row) => {
         if (err) {
           console.error(err.message);
-          res.send(500).send('An internal error has occurred');
+          res.status(500).send('An internal error has occurred');
           return;
         }
 

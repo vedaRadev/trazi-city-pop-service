@@ -46,7 +46,7 @@ db.serialize(() => {
       state TEXT NOT NULL,
       population INTEGER NOT NULL,
       PRIMARY KEY (state, city)
-    );`);
+    ) STRICT;`);
   db.run(`INSERT INTO city_populations (city,state,population) VALUES ${insertionValuesString};`);
 });
 
