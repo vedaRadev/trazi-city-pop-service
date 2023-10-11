@@ -5,8 +5,8 @@
   "main": "server.js",
   "scripts": {
     "postinstall": "node generate-database.js",
-    "clean": "shx rm city-populations.db && shx rm -rf node_modules",
-    "regen-db": "shx rm city-populations.db && node generate-database.js",
+    "clean": "shx rm -f city-populations.db && shx rm -f city-populations.db-journal && shx rm -rf node_modules",
+    "regen-db": "shx rm -f city-populations.db && shx rm -f city-populations.db-journal && node generate-database.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
