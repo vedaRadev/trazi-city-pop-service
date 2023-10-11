@@ -36,7 +36,7 @@ const toRandomInt = (min, maxExclusive) => Math.floor(Math.random() * (maxExclus
 const toRandomEntry = entries => entries[toRandomInt(0, entries.length)];
 const toUrl = ([ city, state ]) => `http://localhost:5555/api/population/state/${state}/city/${city}`;
 
-const raw = fs.readFileSync('./uscities.csv');
+const raw = fs.readFileSync(`${__dirname}/uscities.csv`);
 const [ fields, ...records ] = csvToArray(raw.toString());
 
 const cityStateRecs = records
@@ -54,7 +54,7 @@ const queueNextRandomRequestTimer = () => {
     const pop = toRandomInt(0, 10000);
     const method = !toRandomInt(0, 2) ? 'GET': 'PUT';
 
-    const response = await fetch(
+    fetch(
       url,
       {
         method,
@@ -64,18 +64,21 @@ const queueNextRandomRequestTimer = () => {
           : {}
         )
       }
-    );
-
-    const { status } = response;
-    if (status !== 200 && status !== 201) {
-      const text = await response.text();
-      console.log(`FAILED (${status}): ${method} ${url} ${pop} => ${text}`);
-    } else {
-      const out = method === 'GET' ? JSON.stringify(await response.json()) : await response.text();
-      console.log(`SUCCESS (${status}): ${method} ${url} ${method === 'PUT' ? pop : ''} => ${out}`);
-    }
-
-    queueNextRandomRequestTimer();
+    )
+      .then(async response => {
+        const { status } = response;
+        if (status !== 200 && status !== 201) {
+          const text = await response.text();
+          console.log(`FAILED (${status}): ${method} ${url} ${pop} => ${text}`);
+        } else {
+          const out = method === 'GET' ? JSON.stringify(await response.json()) : await response.text();
+          console.log(`SUCCESS (${status}): ${method} ${url} ${method === 'PUT' ? pop : ''} => ${out}`);
+        }
+      })
+      .catch(error => {
+        console.error('FAILED TO FETCH', method, url, ':', error.message, error.cause.code);
+      })
+      .finally(queueNextRandomRequestTimer);
   }, toRandomInt(100, 2000));
 };
 
