@@ -43,6 +43,7 @@ server.get(
           res.sendStatus(500);
         } else if (row !== null) {
           res.status(200).json(row);
+          memoryCache.put(cacheKey, row, CACHE_TIME_MS);
         } else {
           res.status(400).send(`No entry exists for ${city}, ${state}`);
         }
