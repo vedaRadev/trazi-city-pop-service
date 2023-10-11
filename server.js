@@ -12,6 +12,7 @@ const USER_FACING_ERROR_MAP = {
   SQLITE_BUSY: 'The database file is in use and could not be written to',
   SQLITE_LOCKED: 'The database file is in use and could not be written to',
   SQLITE_INTERRUPT: 'The database operation was interrupted',
+  SQLITE_CONSTRAINT: 'A query constraint was violated. Does the record already exist?',
 };
 
 const toSqliteErrorCode = msg => msg.match(/^SQLITE.*?(?=:)/)?.[0];
@@ -60,8 +61,8 @@ server.get(
       (err, row) => {
         if (err) {
           console.error(`An error occurred when attempting to retrieve record ${city} ${state}:`, err.message);
-          res.send(500).text('Failed to get record:', toUserFacingErrorMessage(err.message));
-        } else if (row !== null) {
+          res.send(500).send('Failed to get record:', toUserFacingErrorMessage(err.message));
+        } else if (row != null) {
           res.status(200).json(row);
           memoryCache.put(cacheKey, row, CACHE_TIME_MS);
         } else {
@@ -89,7 +90,7 @@ server.put(
       (err, row) => {
         if (err) {
           console.error(err.message);
-          res.send(500).text('An internal error has occurred');
+          res.send(500).send('An internal error has occurred');
           return;
         }
 
@@ -107,7 +108,7 @@ server.put(
               }
 
               console.error(`Error when attempting to update ${city} ${state} ${population}:`, err.message);
-              res.status(400).send('Failed to update record:', toUserFacingErrorMessage(err.message));
+              res.status(400).send(`Failed to update record: ${toUserFacingErrorMessage(err.message)}`);
             }
           );
         } else {
@@ -121,7 +122,7 @@ server.put(
               }
 
               console.error(`Error when attempting to insert ${city} ${state} ${population}:`, err.message);
-              res.status(400).send('Failed to create record:', toUserFacingErrorMessage(err.message));
+              res.status(400).send(`Failed to create record: ${toUserFacingErrorMessage(err.message)}`);
             }
           );
         }
