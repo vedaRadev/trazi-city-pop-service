@@ -7,20 +7,21 @@ const PUBLIC_PORT = 5555;
 
 // const toPopulationCacheKey = ({ state, city }) => `${state}${city}`;
 
-const USER_FACING_ERROR_MAP = {
-  SQLITE_ABORT: 'The database operation was aborted',
-  SQLITE_BUSY: 'The database file is in use and could not be written to',
-  SQLITE_LOCKED: 'The database file is in use and could not be written to',
-  SQLITE_INTERRUPT: 'The database operation was interrupted',
-  SQLITE_CONSTRAINT: 'A query constraint was violated. Does the record already exist?',
-};
+// const USER_FACING_ERROR_MAP = {
+//   SQLITE_ABORT: 'The database operation was aborted',
+//   SQLITE_BUSY: 'The database file is in use and could not be written to',
+//   SQLITE_LOCKED: 'The database file is in use and could not be written to',
+//   SQLITE_INTERRUPT: 'The database operation was interrupted',
+//   SQLITE_CONSTRAINT: 'A query constraint was violated. Does the record already exist?',
+// };
 
-const toSqliteErrorCode = msg => msg.match(/^SQLITE.*?(?=:)/)?.[0];
+// const toSqliteErrorCode = msg => msg.match(/^SQLITE.*?(?=:)/)?.[0];
 
 // Given a sqlite db error, provide a nice error to be sent to an API consumer
 const toUserFacingErrorMessage = message => {
-  const sqliteErrorCode = toSqliteErrorCode(message);
-  return USER_FACING_ERROR_MAP[sqliteErrorCode] ?? 'An internal error has occurred';
+  return message;
+  // const sqliteErrorCode = toSqliteErrorCode(message);
+  // return USER_FACING_ERROR_MAP[sqliteErrorCode] ?? message;
 };
 
 const populationDatabase = new sqlite3.cached.Database(
@@ -110,7 +111,7 @@ server.put(
                 return;
               }
 
-              console.error(`Error when attempting to update ${city} ${state} ${population}:`, err.message);
+              console.error(`Error when attempting to update ${city} ${state} ${population}:`, err);
               res.status(400).send(`Failed to update record: ${toUserFacingErrorMessage(err.message)}`);
             }
           );
@@ -124,7 +125,7 @@ server.put(
                 return;
               }
 
-              console.error(`Error when attempting to insert ${city} ${state} ${population}:`, err.message);
+              console.error(`Error when attempting to insert ${city} ${state} ${population}:`, err);
               res.status(400).send(`Failed to create record: ${toUserFacingErrorMessage(err.message)}`);
             }
           );
