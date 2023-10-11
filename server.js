@@ -7,11 +7,32 @@ const CACHE_TIME_MS = 5000;
 
 const toPopulationCacheKey = ({ state, city }) => `${state}${city}`;
 
+const USER_FACING_ERROR_MAP = {
+  SQLITE_ABORT: 'The database operation was aborted',
+  SQLITE_BUSY: 'The database file is in use and could not be written to',
+  SQLITE_LOCKED: 'The database file is in use and could not be written to',
+  SQLITE_INTERRUPT: 'The database operation was interrupted',
+};
+
+const toSqliteErrorCode = msg => msg.match(/^SQLITE.*?(?=:)/)?.[0];
+
+// Given a sqlite db error, provide a nice error to be sent to an API consumer
+const toUserFacingErrorMessage = message => {
+  const sqliteErrorCode = toSqliteErrorCode(message);
+  return USER_FACING_ERROR_MAP[sqliteErrorCode] ?? 'An internal error has occurred';
+};
+
 const populationDatabase = new sqlite3.Database(
   'city-populations.db',
   sqlite3.OPEN_READWRITE,
-  // TODO handle case where db cannot be opened
-  // (err) => { ... }
+  err => {
+    if (err) {
+      console.error('Encountered an error when attempting to establish database connection:', err.message);
+
+      // TODO implement process cleanup
+      process.exit();
+    }
+  }
 );
 
 const toLowerCaseParams = (...props) => (req, _, next) => {
@@ -37,10 +58,9 @@ server.get(
       'SELECT population FROM city_populations WHERE state=? AND city=?',
       [ state, city ],
       (err, row) => {
-        console.log(err);
         if (err) {
-          // TODO handle err
-          res.sendStatus(500);
+          console.error(`An error occurred when attempting to retrieve record ${city} ${state}:`, err.message);
+          res.send(500).text('Failed to get record:', toUserFacingErrorMessage(err.message));
         } else if (row !== null) {
           res.status(200).json(row);
           memoryCache.put(cacheKey, row, CACHE_TIME_MS);
@@ -59,12 +79,17 @@ server.put(
   (req, res) => {
     const { params: { state, city }, body: population } = req;
 
+    // I wanted to use a sqlite upsert statement here but there was no good way of determining if
+    // a record was inserted or updated.
+    // See docs here: https://github.com/TryGhost/node-sqlite3/wiki/API#runsql--param---callback
+    // Note the section about the `lastID` and `changes` properties.
     populationDatabase.get(
       'SELECT EXISTS(SELECT 1 FROM city_populations WHERE state=? AND city=?)',
       [ state, city ],
       (err, row) => {
         if (err) {
-          res.sendStatus(500);
+          console.error(err.message);
+          res.send(500).text('An internal error has occurred');
           return;
         }
 
@@ -75,8 +100,14 @@ server.put(
             WHERE city=? AND state=?`,
             [ population, city, state ],
             err => {
-              if (!err) return res.sendStatus(200);
-              res.sendStatus(400);
+              if (!err) {
+                res.sendStatus(200);
+                memoryCache.del(toPopulationCacheKey(req.params));
+                return;
+              }
+
+              console.error(`Error when attempting to update ${city} ${state} ${population}:`, err.message);
+              res.status(400).send('Failed to update record:', toUserFacingErrorMessage(err.message));
             }
           );
         } else {
@@ -84,8 +115,13 @@ server.put(
             `INSERT INTO city_populations(city, state, population) VALUES(?, ?, ?)`,
             [ city, state, population ],
             err => {
-              if (!err) return res.sendStatus(201);
-              res.sendStatus(400);
+              if (!err) {
+                res.sendStatus(201);
+                return;
+              }
+
+              console.error(`Error when attempting to insert ${city} ${state} ${population}:`, err.message);
+              res.status(400).send('Failed to create record:', toUserFacingErrorMessage(err.message));
             }
           );
         }
