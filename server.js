@@ -29,8 +29,6 @@ const populationDatabase = new sqlite3.cached.Database(
   err => {
     if (err) {
       console.error('Encountered an error when attempting to establish database connection:', err.message);
-
-      // TODO implement process cleanup
       process.exit();
     }
   }
@@ -132,3 +130,14 @@ server.put(
 );
 
 server.listen(PUBLIC_PORT, () => console.log(`Server is listening on ${PUBLIC_PORT}`));
+
+const handleExit = () => {
+  console.log('\nClosing database');
+  populationDatabase.close();
+  process.exit();
+};
+
+process.on('SIGINT', handleExit);
+process.on('SIGUSR1', handleExit);
+process.on('SIGUSR2', handleExit);
+process.on('uncaughtException', handleExit);
