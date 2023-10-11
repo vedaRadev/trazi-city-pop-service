@@ -1,11 +1,11 @@
 const express = require('express');
 const sqlite3 = require('sqlite3');
-const memoryCache = require('memory-cache');
+// const memoryCache = require('memory-cache');
 
 const PUBLIC_PORT = 5555;
-const CACHE_TIME_MS = 5000;
+// const CACHE_TIME_MS = 5000;
 
-const toPopulationCacheKey = ({ state, city }) => `${state}${city}`;
+// const toPopulationCacheKey = ({ state, city }) => `${state}${city}`;
 
 const USER_FACING_ERROR_MAP = {
   SQLITE_ABORT: 'The database operation was aborted',
@@ -23,7 +23,7 @@ const toUserFacingErrorMessage = message => {
   return USER_FACING_ERROR_MAP[sqliteErrorCode] ?? 'An internal error has occurred';
 };
 
-const populationDatabase = new sqlite3.Database(
+const populationDatabase = new sqlite3.cached.Database(
   'city-populations.db',
   sqlite3.OPEN_READWRITE,
   err => {
@@ -50,9 +50,9 @@ server.get(
   '/api/population/state/:state/city/:city',
   toLowerCaseParams('state', 'city'),
   (req, res) => {
-    const cacheKey = toPopulationCacheKey(req.params);
-    const cachedValue = memoryCache.get(cacheKey);
-    if (cachedValue != null) return res.status(200).json(cachedValue);
+    // const cacheKey = toPopulationCacheKey(req.params);
+    // const cachedValue = memoryCache.get(cacheKey);
+    // if (cachedValue != null) return res.status(200).json(cachedValue);
 
     const { params: { state, city } } = req;
     populationDatabase.get(
@@ -64,7 +64,7 @@ server.get(
           res.send(500).send('Failed to get record:', toUserFacingErrorMessage(err.message));
         } else if (row != null) {
           res.status(200).json(row);
-          memoryCache.put(cacheKey, row, CACHE_TIME_MS);
+          // memoryCache.put(cacheKey, row, CACHE_TIME_MS);
         } else {
           res.status(400).send(`No entry exists for ${city}, ${state}`);
         }
@@ -103,7 +103,7 @@ server.put(
             err => {
               if (!err) {
                 res.sendStatus(200);
-                memoryCache.del(toPopulationCacheKey(req.params));
+                // memoryCache.del(toPopulationCacheKey(req.params));
                 return;
               }
 
